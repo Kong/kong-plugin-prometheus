@@ -31,6 +31,9 @@ local function init()
                                           "Datastore reachable from Kong, 0 is unreachable")
 
   -- per service
+  metrics.requests = prometheus:counter("http_requests_total",
+                                       "Number of HTTP requests", 
+                                       {"upstream", "status", "username"})
   metrics.status = prometheus:counter("http_status",
                                       "HTTP status codes per service in Kong",
                                       {"code", "service"})
