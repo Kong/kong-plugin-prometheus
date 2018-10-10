@@ -287,7 +287,7 @@ function Prometheus.init(dict_name, prefix)
 end
 
 function Prometheus:log_error(...)
-  ngx.log(ngx.ERR, ...)
+  kong.log.ERR(...)
   self.dict:incr("nginx_metric_errors_total", 1)
 end
 
@@ -308,7 +308,7 @@ end
 --   a Counter object.
 function Prometheus:counter(name, description, label_names)
   if not self.initialized then
-    ngx.log(ngx.ERR, "Prometheus module has not been initialized")
+    kong.log.ERR("Prometheus module has not been initialized")
     return
   end
 
@@ -341,7 +341,7 @@ end
 --   a Gauge object.
 function Prometheus:gauge(name, description, label_names)
   if not self.initialized then
-    ngx.log(ngx.ERR, "Prometheus module has not been initialized")
+    kong.log.ERR("Prometheus module has not been initialized")
     return
   end
 
@@ -376,7 +376,7 @@ end
 --   a Histogram object.
 function Prometheus:histogram(name, description, label_names, buckets)
   if not self.initialized then
-    ngx.log(ngx.ERR, "Prometheus module has not been initialized")
+    kong.log.ERR("Prometheus module has not been initialized")
     return
   end
 
@@ -494,9 +494,9 @@ end
 -- It will get the metrics from the dictionary, sort them, and expose them
 -- aling with TYPE and HELP comments.
 function Prometheus:collect()
-  ngx.header.content_type = "text/plain"
+  kong.response.set_header("Content-Type", "text/plain")
   if not self.initialized then
-    ngx.log(ngx.ERR, "Prometheus module has not been initialized")
+    kong.log.ERR("Prometheus module has not been initialized")
     return
   end
 
