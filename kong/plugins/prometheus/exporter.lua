@@ -12,7 +12,7 @@ local prometheus
 local function init()
   local shm = "prometheus_metrics"
   if not ngx.shared.prometheus_metrics then
-    kong.log.ERR("prometheus: ngx shared dict 'prometheus_metrics' not found")
+    kong.log.err("prometheus: ngx shared dict 'prometheus_metrics' not found")
     return
   end
 
@@ -41,7 +41,7 @@ end
 
 local function log(message)
   if not metrics then
-    kong.log.ERR("prometheus: can not log metrics because of an initialization "
+    kong.log.err("prometheus: can not log metrics because of an initialization "
                  .. "error, please make sure that you've declared "
                  .. "'prometheus_metrics' shared dict in your nginx template")
     return
@@ -82,7 +82,7 @@ end
 
 local function collect()
   if not prometheus or not metrics then
-    kong.log.ERR("prometheus: plugin is not initialized, please make sure ",
+    kong.log.err("prometheus: plugin is not initialized, please make sure ",
                  " 'prometheus_metrics' shared dict is present in nginx template")
     return responses.send_HTTP_INTERNAL_SERVER_ERROR()
   end
@@ -90,7 +90,7 @@ local function collect()
   local r = ngx.location.capture "/nginx_status"
 
   if r.status ~= 200 then
-    kong.log.WARN("prometheus: failed to retrieve /nginx_status ",
+    kong.log.warn("prometheus: failed to retrieve /nginx_status ",
                   "while processing /metrics endpoint")
 
   else
@@ -113,7 +113,7 @@ local function collect()
 
   else
     metrics.db_reachable:set(0)
-    kong.log.ERR("prometheus: failed to reach database while processing",
+    kong.log.err("prometheus: failed to reach database while processing",
                  "/metrics endpoint: ", err)
   end
 
