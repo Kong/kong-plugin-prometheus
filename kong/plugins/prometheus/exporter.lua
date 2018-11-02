@@ -49,7 +49,7 @@ local function log(message, conf)
 
   local pivot = "none"
   if conf.header_name then
-    pivot = message.request.headers[conf.header_name] or "none"
+    pivot = message.request.headers[conf.header_name] or message.response.headers[conf.header_name] or "none"
   end
 
   local service_name
