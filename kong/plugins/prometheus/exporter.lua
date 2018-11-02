@@ -4,6 +4,7 @@ local select = select
 local DEFAULT_BUCKETS = { 1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70,
                           80, 90, 100, 200, 300, 400, 500, 1000,
                           2000, 5000, 10000, 30000, 60000 }
+local PIVOT_LABEL_NAME = "pivot"
 local metrics = {}
 local prometheus
 
@@ -27,23 +28,28 @@ local function init()
   -- per service
   metrics.status = prometheus:counter("http_status",
                                       "HTTP status codes per service in Kong",
-                                      {"code", "service"})
+                                      {"code", "service", PIVOT_LABEL_NAME})
   metrics.latency = prometheus:histogram("latency",
                                          "Latency added by Kong, total request time and upstream latency for each service in Kong",
-                                         {"type", "service"},
+                                         {"type", "service", PIVOT_LABEL_NAME},
                                          DEFAULT_BUCKETS) -- TODO make this configurable
   metrics.bandwidth = prometheus:counter("bandwidth",
                                          "Total bandwidth in bytes consumed per service in Kong",
-                                         {"type", "service"})
+                                         {"type", "service", PIVOT_LABEL_NAME})
 end
 
 
-local function log(message)
+local function log(message, conf)
   if not metrics then
     kong.log.err("prometheus: can not log metrics because of an initialization "
                  .. "error, please make sure that you've declared "
                  .. "'prometheus_metrics' shared dict in your nginx template")
     return
+  end
+
+  local pivot = "none"
+  if conf.header_name then
+    pivot = message.request.headers[conf.header_name] or "none"
   end
 
   local service_name
@@ -54,31 +60,31 @@ local function log(message)
     return
   end
 
-  metrics.status:inc(1, { message.response.status, service_name })
+  metrics.status:inc(1, { message.response.status, service_name, pivot })
 
   local request_size = tonumber(message.request.size)
   if request_size and request_size > 0 then
-    metrics.bandwidth:inc(request_size, { "ingress", service_name })
+    metrics.bandwidth:inc(request_size, { "ingress", service_name, pivot })
   end
 
   local response_size = tonumber(message.response.size)
   if response_size and response_size > 0 then
-    metrics.bandwidth:inc(response_size, { "egress", service_name })
+    metrics.bandwidth:inc(response_size, { "egress", service_name, pivot })
   end
 
   local request_latency = message.latencies.request
   if request_latency and request_latency >= 0 then
-    metrics.latency:observe(request_latency, { "request", service_name })
+    metrics.latency:observe(request_latency, { "request", service_name, pivot })
   end
 
   local upstream_latency = message.latencies.proxy
   if upstream_latency ~= nil and upstream_latency >= 0 then
-    metrics.latency:observe(upstream_latency, {"upstream", service_name })
+    metrics.latency:observe(upstream_latency, {"upstream", service_name, pivot })
   end
 
   local kong_proxy_latency = message.latencies.kong
   if kong_proxy_latency ~= nil and kong_proxy_latency >= 0 then
-    metrics.latency:observe(kong_proxy_latency, { "kong", service_name })
+    metrics.latency:observe(kong_proxy_latency, { "kong", service_name, pivot })
   end
 end
 

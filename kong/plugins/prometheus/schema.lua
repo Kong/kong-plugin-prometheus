@@ -14,7 +14,11 @@ return {
   fields = {
     { config = {
         type = "record",
-        fields = {},
+        fields = {
+          header_name = {
+            type = "string"
+          }
+        },
         custom_validator = validate_shared_dict,
     }, },
   },
