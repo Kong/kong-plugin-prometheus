@@ -21,10 +21,10 @@ end
 
 app.handle_404 = function(self) -- luacheck: ignore 212
   local body = '{"message":"Not found"}'
+  ngx.status = 404
   ngx.header["Content-Type"] = "application/json; charset=utf-8"
   ngx.header["Content-Length"] = #body + 1
   ngx.say(body)
-  ngx.exit(404)
 end
 
 
