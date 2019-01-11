@@ -35,6 +35,7 @@ end)
 
 app:match("/metrics", function()
   prometheus:collect()
+  return { content_type = "text/plain", layout = false, render = true }
 end)
 
 
