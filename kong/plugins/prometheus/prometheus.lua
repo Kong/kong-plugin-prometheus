@@ -493,8 +493,12 @@ end
 -- This function should be used to expose the metrics on a separate HTTP page.
 -- It will get the metrics from the dictionary, sort them, and expose them
 -- aling with TYPE and HELP comments.
-function Prometheus:collect()
-  ngx.header.content_type = "text/plain"
+function Prometheus:collect(opts)
+  local opts = opts or {}
+  local handler = opts.handler or function(output)
+    ngx.header.content_type = "text/plain"
+    ngx.print(output)
+  end
   if not self.initialized then
     ngx.log(ngx.ERR, "Prometheus module has not been initialized")
     return
@@ -531,7 +535,7 @@ function Prometheus:collect()
       self:log_error("Error getting '", key, "': ", err)
     end
   end
-  ngx.print(output)
+  handler(output)
 end
 
 return Prometheus
