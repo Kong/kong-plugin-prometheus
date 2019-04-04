@@ -14,7 +14,9 @@ return {
   fields = {
     { config = {
         type = "record",
-        fields = {},
+        fields = {
+            { metrics_aggregation = {type = "string", default = "SERVICE", one_of = { "SERVICE", "SERVICE/ROUTE" }, }, },
+        },
         custom_validator = validate_shared_dict,
     }, },
   },

@@ -1,3 +1,4 @@
+local dump = require 'pl.pretty'.dump
 local find = string.find
 local select = select
 
@@ -35,10 +36,22 @@ local function init()
   metrics.bandwidth = prometheus:counter("bandwidth",
                                          "Total bandwidth in bytes consumed per service in Kong",
                                          {"type", "service"})
+
+  -- per service/route
+  metrics.route_status = prometheus:counter("http_route_status",
+                                      "HTTP status codes per service/route in Kong",
+                                      {"code", "service", "route"})
+  metrics.route_latency = prometheus:histogram("route_latency",
+                                         "Latency added by Kong, total request time and upstream latency for each service/route in Kong",
+                                         {"type", "service", "route"},
+                                         DEFAULT_BUCKETS) -- TODO make this configurable
+  metrics.route_bandwidth = prometheus:counter("route_bandwidth",
+                                         "Total bandwidth in bytes consumed per service/route in Kong",
+                                         {"type", "service", "route"})
 end
 
 
-local function log(message)
+local function log(message, conf)
   if not metrics then
     kong.log.err("prometheus: can not log metrics because of an initialization "
                  .. "error, please make sure that you've declared "
@@ -54,31 +67,67 @@ local function log(message)
     return
   end
 
-  metrics.status:inc(1, { message.response.status, service_name })
+  local route_name
+  if conf.metrics_aggregation == "SERVICE/ROUTE" then
+    if message and message.route then
+      if message.route.name then
+        route_name = message.route.name
+      else
+        route_name = message.route.id
+      end
+    end
+    -- TODO: check behavior whtn route is nil
+  end
 
+  if conf.metrics_aggregation == "SERVICE" then
+    metrics.status:inc(1, { message.response.status, service_name })
+  else
+    metrics.route_status:inc(1, { message.response.status, service_name, route_name })
+  end
+    
   local request_size = tonumber(message.request.size)
   if request_size and request_size > 0 then
-    metrics.bandwidth:inc(request_size, { "ingress", service_name })
+    if conf.metrics_aggregation == "SERVICE" then
+      metrics.bandwidth:inc(request_size, { "ingress", service_name })
+    else
+      metrics.route_bandwidth:inc(request_size, { "ingress", service_name, route_name })
+    end
   end
 
   local response_size = tonumber(message.response.size)
   if response_size and response_size > 0 then
-    metrics.bandwidth:inc(response_size, { "egress", service_name })
+    if conf.metrics_aggregation == "SERVICE" then
+      metrics.bandwidth:inc(response_size, { "egress", service_name })
+    else
+      metrics.route_bandwidth:inc(response_size, { "egress", service_name, route_name })
+    end
   end
 
   local request_latency = message.latencies.request
   if request_latency and request_latency >= 0 then
-    metrics.latency:observe(request_latency, { "request", service_name })
+    if conf.metrics_aggregation == "SERVICE" then
+      metrics.latency:observe(request_latency, { "request", service_name })
+    else
+      metrics.route_latency:observe(request_latency, { "request", service_name, route_name })
+    end
   end
 
   local upstream_latency = message.latencies.proxy
   if upstream_latency ~= nil and upstream_latency >= 0 then
-    metrics.latency:observe(upstream_latency, {"upstream", service_name })
+    if conf.metrics_aggregation == "SERVICE" then
+      metrics.latency:observe(upstream_latency, {"upstream", service_name })
+    else
+      metrics.route_latency:observe(upstream_latency, { "upstream", service_name, route_name })
+    end
   end
 
   local kong_proxy_latency = message.latencies.kong
   if kong_proxy_latency ~= nil and kong_proxy_latency >= 0 then
-    metrics.latency:observe(kong_proxy_latency, { "kong", service_name })
+    if conf.metrics_aggregation == "SERVICE" then
+      metrics.latency:observe(kong_proxy_latency, { "kong", service_name })
+    else
+      metrics.route_latency:observe(kong_proxy_latency, { "kong", service_name, route_name })
+    end
   end
 end
 
