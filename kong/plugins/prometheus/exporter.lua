@@ -74,8 +74,11 @@ local function log(message, conf)
       else
         route_name = message.route.id
       end
+    else
+      -- exceptional case - no root information on a service request
+      route_name = "<no route>"
     end
-    -- TODO: check behavior whtn route is nil
+
   end
 
   if conf.metrics_aggregation == "SERVICE" then
