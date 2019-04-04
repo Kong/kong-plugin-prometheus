@@ -1,4 +1,3 @@
-local dump = require 'pl.pretty'.dump
 local find = string.find
 local select = select
 
