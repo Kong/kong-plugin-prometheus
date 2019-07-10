@@ -1,5 +1,6 @@
 local find = string.find
 local select = select
+local ipairs = ipairs
 
 local DEFAULT_BUCKETS = { 1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70,
                           80, 90, 100, 200, 300, 400, 500, 1000,
@@ -28,6 +29,9 @@ local function init()
   metrics.status = prometheus:counter("http_status",
                                       "HTTP status codes per service in Kong",
                                       {"code", "service"})
+  metrics.tries = prometheus:counter("tries_http_status",
+                                     "Upstream status code in tries",
+                                     {"code", "service", "target"})
   metrics.latency = prometheus:histogram("latency",
                                          "Latency added by Kong, total request time and upstream latency for each service in Kong",
                                          {"type", "service"},
@@ -55,6 +59,12 @@ local function log(message)
   end
 
   metrics.status:inc(1, { message.response.status, service_name })
+
+  for _,v in ipairs(message.tries) do
+    if v.code then
+      metrics.tries:inc(1, { v.code, service_name, ("%s:%d"):format(v.ip, v.port) })
+    end
+  end
 
   local request_size = tonumber(message.request.size)
   if request_size and request_size > 0 then
