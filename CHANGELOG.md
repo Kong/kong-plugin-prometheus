@@ -9,6 +9,11 @@
 - [0.2.0](#020---20180924)
 - [0.1.0](#010---20180615)
 
+##  [0.4.1] - 2019/07/31
+
+- Fix issue where the plugin's shared dictionary would not be properly
+initialized
+
 ##  [0.4.0] - 2019/06/05
 
 - Remove BasePlugin inheritance (not needed anymore)
