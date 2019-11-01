@@ -1,3 +1,5 @@
+local counter = require "resty.counter"
+
 local find = string.find
 local select = select
 
@@ -5,7 +7,10 @@ local DEFAULT_BUCKETS = { 1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70,
                           80, 90, 100, 200, 300, 400, 500, 1000,
                           2000, 5000, 10000, 30000, 60000 }
 local metrics = {}
+-- prometheus.lua instance
 local prometheus
+-- lua-resty-counter instance
+local counter
 
 
 local function init()
@@ -58,6 +63,15 @@ local function init()
                                          {"type", "service", "route"})
 end
 
+local function init_worker()
+  local err
+  -- create a lua-resty-counter instance with sync interval of every second
+  counter, err = counter.new(dict_name, 1)
+  if err then
+    error(err)
+  end
+  prometheus:use_resty_counter(counter)
+end
 
 local function log(message)
   if not metrics then
@@ -155,6 +169,9 @@ local function collect()
     metrics.memory_stats.worker_vms:set(res.workers_lua_vms[i].http_allocated_gc,
                                         {res.workers_lua_vms[i].pid})
   end
+
+  -- force a manual sync of counter local state to make integration test working
+  counter.sync()
 
   prometheus:collect()
 end

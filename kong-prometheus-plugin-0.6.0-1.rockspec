@@ -13,6 +13,7 @@ description = {
 }
 
 dependencies = {
+  "lua-resty-counter >= 0.1.0",
   --"kong >= 0.13.0",
 }
 
