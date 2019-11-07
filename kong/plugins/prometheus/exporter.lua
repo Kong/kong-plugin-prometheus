@@ -24,6 +24,10 @@ local function init()
   metrics.db_reachable = prometheus:gauge("datastore_reachable",
                                           "Datastore reachable from Kong, " ..
                                           "0 is unreachable")
+  metrics.upstream_target_health = prometheus.gauge("upstream_target_health",
+                                                    "Is upstream target healthy?, 0 is Unhealthy",
+                                                    {"target"})
+
   local memory_stats = {}
   memory_stats.worker_vms = prometheus:gauge("memory_workers_lua_vms_bytes",
                                              "Allocated bytes in worker Lua VM",
@@ -144,6 +148,21 @@ local function collect()
     metrics.db_reachable:set(0)
     kong.log.err("prometheus: failed to reach database while processing",
                  "/metrics endpoint: ", err)
+  end
+
+  -- upstream targets accessible?
+  local balancer = require "kong.runloop.balancer"
+  local upstreams_dict = balancer.get_all_upstreams()
+  for name, id in pairs(upstreams_dict) do
+      local health_info = balancer.get_upstream_health(id)
+      for target, status in pairts(health_info) do
+          if status == "HEALTHY" then
+              metrics.upstream_target_health:set(1, { target })
+          else
+              metrics.upstream_target_health:set(0, { target })
+              kong.log.err("Upstream target is Unhealthy", target)
+          end
+      end
   end
 
   -- memory stats
