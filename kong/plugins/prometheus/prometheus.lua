@@ -373,7 +373,7 @@ function Prometheus.init(dict_name, prefix)
 end
 
 -- enable the use the lua-resty-counter for Counter and Histogram
-function Prometheus:use_resty_counter(counter)
+function Prometheus:set_resty_counter(counter)
   self.resty_counter = counter
 end
 

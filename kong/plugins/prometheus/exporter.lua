@@ -70,7 +70,7 @@ local function init_worker()
   if err then
     error(err)
   end
-  prometheus:use_resty_counter(counter)
+  prometheus:set_resty_counter(counter)
 end
 
 local function log(message)
