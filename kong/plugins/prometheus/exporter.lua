@@ -24,7 +24,7 @@ local function init()
   metrics.db_reachable = prometheus:gauge("datastore_reachable",
                                           "Datastore reachable from Kong, " ..
                                           "0 is unreachable")
-  metrics.upstream_target_health = prometheus.gauge("upstream_target_health",
+  metrics.upstream_target_health = prometheus:gauge("upstream_target_health",
                                                     "Is upstream target healthy?, 0 is Unhealthy",
                                                     {"target"})
 
