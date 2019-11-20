@@ -155,12 +155,13 @@ local function collect()
   local upstreams_dict = balancer.get_all_upstreams()
   for name, id in pairs(upstreams_dict) do
       local health_info = balancer.get_upstream_health(id)
-      for target, status in pairts(health_info) do
+      for target, status in pairs(health_info) do
           if status == "HEALTHY" then
               metrics.upstream_target_health:set(1, { target })
+          elseif status == "HEALTHCHECKS_OFF" then
+              metrics.upstream_target_health = nil
           else
               metrics.upstream_target_health:set(0, { target })
-              kong.log.err("Upstream target is Unhealthy", target)
           end
       end
   end
