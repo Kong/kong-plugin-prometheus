@@ -215,6 +215,15 @@ describe("Plugin: prometheus (access via status API)", function()
     assert.matches('kong_datastore_reachable 1', body, nil, true)
   end)
 
+  it("exposes upstream's target health metrics", function()
+    local res = assert(status_client:send {
+      method  = "GET",
+      path    = "/metrics",
+    })
+    local body = assert.res_status(200, res)
+    assert.matches('kong_upstream_target_health 1', body, nil, true)
+  end)
+
   it("exposes Lua worker VM stats", function()
     local res = assert(status_client:send {
       method  = "GET",

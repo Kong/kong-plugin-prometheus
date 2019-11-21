@@ -151,7 +151,9 @@ kong_nginx_http_current_connections{state="writing"} 1
 # HELP kong_nginx_metric_errors_total Number of nginx-lua-prometheus errors
 # TYPE kong_nginx_metric_errors_total counter
 kong_nginx_metric_errors_total 0
-
+# HELP kong_upstream_target_health Upstream target healthy?, 0 is UNHEALTHY
+# TYPE kong_upstream_target_health gauge
+kong_upstream_target_health{target="<IPAddr>:<port>"} 1
 ```
 
 
