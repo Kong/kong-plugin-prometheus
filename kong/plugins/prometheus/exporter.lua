@@ -10,7 +10,7 @@ local metrics = {}
 -- prometheus.lua instance
 local prometheus
 -- lua-resty-counter instance
-local counter
+local counter_instance
 
 
 local function init()
@@ -66,11 +66,11 @@ end
 local function init_worker()
   local err
   -- create a lua-resty-counter instance with sync interval of every second
-  counter, err = counter.new(dict_name, 1)
+  counter_instance, err = counter.new("prometheus_metrics", 1)
   if err then
     error(err)
   end
-  prometheus:set_resty_counter(counter)
+  prometheus:set_resty_counter(counter_instance)
 end
 
 local function log(message)
@@ -171,14 +171,15 @@ local function collect()
   end
 
   -- force a manual sync of counter local state to make integration test working
-  counter.sync()
+  counter_instance:sync()
 
   prometheus:collect()
 end
 
 
 return {
-  init    = init,
-  log     = log,
-  collect = collect,
+  init        = init,
+  init_worker = init_worker,
+  log         = log,
+  collect     = collect,
 }
