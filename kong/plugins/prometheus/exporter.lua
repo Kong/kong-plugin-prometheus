@@ -66,13 +66,7 @@ local function init()
 end
 
 local function init_worker()
-  local err
-  -- create a lua-resty-counter instance with sync interval of every second
-  counter_instance, err = counter.new("prometheus_metrics", 1)
-  if err then
-    error(err)
-  end
-  prometheus:set_resty_counter(counter_instance)
+  prometheus:init_worker()
 end
 
 local function log(message)
@@ -171,9 +165,6 @@ local function collect()
     metrics.memory_stats.worker_vms:set(res.workers_lua_vms[i].http_allocated_gc,
                                         {res.workers_lua_vms[i].pid})
   end
-
-  -- force a manual sync of counter local state to make integration test working
-  counter_instance:sync()
 
   prometheus:collect()
 end
