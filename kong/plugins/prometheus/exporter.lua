@@ -69,6 +69,9 @@ local function init_worker()
   prometheus:init_worker()
 end
 
+
+local table_3 = {0, 0, 0}
+
 local function log(message)
   if not metrics then
     kong.log.err("prometheus: can not log metrics because of an initialization "
@@ -90,31 +93,39 @@ local function log(message)
     route_name = message.route.name or message.route.id
   end
 
-  metrics.status:inc(1, { message.response.status, service_name, route_name })
+  table_3[1] = message.response.status
+  table_3[2] = service_name
+  table_3[3] = route_name
+  metrics.status:inc(1, table_3)
 
   local request_size = tonumber(message.request.size)
   if request_size and request_size > 0 then
-    metrics.bandwidth:inc(request_size, { "ingress", service_name, route_name })
+    table_3[1] = "ingress"
+    metrics.bandwidth:inc(request_size, table_3)
   end
 
   local response_size = tonumber(message.response.size)
   if response_size and response_size > 0 then
-    metrics.bandwidth:inc(response_size, { "egress", service_name, route_name })
+    table_3[1] = "egress"
+    metrics.bandwidth:inc(response_size, table_3)
   end
 
   local request_latency = message.latencies.request
   if request_latency and request_latency >= 0 then
-    metrics.latency:observe(request_latency, { "request", service_name, route_name })
+    table_3[1] = "request"
+    metrics.latency:observe(request_latency, table_3)
   end
 
   local upstream_latency = message.latencies.proxy
   if upstream_latency ~= nil and upstream_latency >= 0 then
-    metrics.latency:observe(upstream_latency, { "upstream", service_name, route_name })
+    table_3[1] = "upstream"
+    metrics.latency:observe(upstream_latency, table_3)
   end
 
   local kong_proxy_latency = message.latencies.kong
   if kong_proxy_latency ~= nil and kong_proxy_latency >= 0 then
-    metrics.latency:observe(kong_proxy_latency, { "kong", service_name, route_name })
+    table_3[1] = "kong"
+    metrics.latency:observe(kong_proxy_latency, table_3)
   end
 end
 

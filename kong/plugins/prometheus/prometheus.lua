@@ -214,8 +214,8 @@ local function lookup_or_create(self, label_values)
     key[self.bucket_count+3] = string.format("%s,le=\"Inf\"}", bucket_pref)
   else
     key = full_metric_name(self.name, self.label_names, label_values)
-    t[KEY_METRIC] = key
   end
+  t[KEY_METRIC] = key
   return key
 end
 
