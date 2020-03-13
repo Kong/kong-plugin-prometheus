@@ -321,6 +321,9 @@ local function reset(self)
       self:_log_error("Error getting '", key, "': ", err)
     end
   end
+
+  -- clean up lookup table as well
+  self.lookup = {}
 end
 
 local function register(self, name, help, label_names, bucket, typ)
