@@ -1,5 +1,3 @@
-local counter = require "resty.counter"
-
 local kong = kong
 local ngx = ngx
 local find = string.find
@@ -11,8 +9,6 @@ local DEFAULT_BUCKETS = { 1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70,
 local metrics = {}
 -- prometheus.lua instance
 local prometheus
--- lua-resty-counter instance
-local counter_instance
 
 
 local function init()

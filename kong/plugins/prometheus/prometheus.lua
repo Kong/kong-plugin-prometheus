@@ -153,14 +153,14 @@ function _M.init(dict_name, prefix, sync_interval)
 
   self.registry = {}
 
+  self.initialized = true
+
   self:counter(METRICS_NAME_ERRORS_TOTAL,
     "Number of nginx-lua-prometheus errors")
   self.dict:set(METRICS_NAME_ERRORS_TOTAL, 0)
 
   -- sync interval for lua-resty-counter
   self.sync_interval = sync_interval or 1
-
-  self.initialized = true
   return self
 end
 
@@ -169,7 +169,7 @@ function _M:init_worker()
   if err then
     error(err, 2)
   end
-  self.counter = counter_instance
+  self.resty_counter = counter_instance
 end
 
 local function lookup_or_create(self, label_values)
@@ -231,7 +231,7 @@ local function inc(self, value, label_values)
   -- in init phase
   local c = self._counter
   if not c then
-    c = self.parent.counter
+    c = self.parent.resty_counter
     if not c then
       self:_log_error(ERR_MSG_COUNTER_NOT_INITIALIZED)
       return
@@ -277,7 +277,7 @@ local function observe(self, value, label_values)
   -- in init phase
   local c = self._counter
   if not c then
-    c = self.parent.counter
+    c = self.parent.resty_counter
     if not c then
       self:_log_error(ERR_MSG_COUNTER_NOT_INITIALIZED)
       return
@@ -325,6 +325,7 @@ end
 
 local function register(self, name, help, label_names, bucket, typ)
   if not self.initialized then
+    error("2")
     ngx.log(ngx.ERR, "Prometheus module has not been initialized")
     return
   end
@@ -398,7 +399,7 @@ function _M:metric_data()
     return
   end
   -- force a manual sync of counter local state to make integration test working
-  self.counter:sync()
+  self.resty_counter:sync()
 
   local keys = self.dict:get_keys(0)
   -- Prometheus server expects buckets of a histogram to appear in increasing
@@ -449,7 +450,7 @@ end
 
 function _M:log_error(...)
   ngx.log(ngx.ERR, ...)
-  self.counter:incr(METRICS_NAME_ERRORS_TOTAL, 1)
+  self.resty_counter:incr(METRICS_NAME_ERRORS_TOTAL, 1)
 end
 
 return _M
