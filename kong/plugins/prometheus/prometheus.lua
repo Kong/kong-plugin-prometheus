@@ -192,7 +192,10 @@ local function lookup_or_create(self, label_values)
   end
   local t = self.lookup
   if label_values then
-    for _, label in ipairs(label_values) do
+    -- don't use ipairs here to avoid inner loop generates trace first
+    local label
+    for i=1,self.label_count do
+      label = label_values[i]
       if not t[label] then
         t[label] = {}
       end
@@ -324,8 +327,10 @@ local function observe(self, value, label_values)
   c:incr(keys[2], value, 0)
 
   local seen = false
-  for i, bucket in ipairs(self.bucket) do
-    if value <= bucket then
+  -- check in reverse order, otherwise we will always
+  -- need to traverse the whole table.
+  for i=self.bucket_count, 1, -1 do
+    if value <= self.bucket[i] then
       c:incr(keys[2+i], 1, 0)
       seen = true
     elseif seen then
