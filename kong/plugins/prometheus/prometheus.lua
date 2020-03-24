@@ -40,6 +40,8 @@
 -- https://github.com/knyar/nginx-lua-prometheus
 -- Released under MIT license.
 
+local tablepool = require "tablepool"
+
 -- Default set of latency buckets, 5ms to 10s:
 local DEFAULT_BUCKETS = {0.005, 0.01, 0.02, 0.03, 0.05, 0.075, 0.1, 0.2, 0.3,
                          0.4, 0.5, 0.75, 1, 1.5, 2, 3, 4, 5, 10}
@@ -56,7 +58,7 @@ local function full_metric_name(name, label_names, label_values)
   if not label_names then
     return name
   end
-  local label_parts = {}
+  local label_parts = tablepool.fetch("label_parts", #label_values, 0)
   for idx, key in ipairs(label_names) do
     local label_value = (string.format("%s", label_values[idx])
       :gsub("[^\032-\126]", "")  -- strip non-printable characters
@@ -64,7 +66,9 @@ local function full_metric_name(name, label_names, label_values)
       :gsub('"', '\\"'))
     table.insert(label_parts, key .. '="' .. label_value .. '"')
   end
-  return name .. "{" .. table.concat(label_parts, ",") .. "}"
+  local metric_name = name .. "{" .. table.concat(label_parts, ",") .. "}"
+  tablepool.release("label_parts", label_parts)
+  return metric_name
 end
 
 -- Metric is a "parent class" for all metrics.
