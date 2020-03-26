@@ -48,17 +48,17 @@ local function init()
   -- per service/route
   metrics.status = prometheus:counter("http_status",
                                       "HTTP status codes per service/route in Kong",
-                                      {"code", "service", "route"})
+                                      {"service", "route", "code"})
   metrics.latency = prometheus:histogram("latency",
                                          "Latency added by Kong, total " ..
                                          "request time and upstream latency " ..
                                          "for each service/route in Kong",
-                                         {"type", "service", "route"},
+                                         {"service", "route", "type"},
                                          DEFAULT_BUCKETS) -- TODO make this configurable
   metrics.bandwidth = prometheus:counter("bandwidth",
                                          "Total bandwidth in bytes " ..
                                          "consumed per service/route in Kong",
-                                         {"type", "service", "route"})
+                                         {"service", "route", "type"})
 end
 
 local function init_worker()
@@ -89,38 +89,38 @@ local function log(message)
     route_name = message.route.name or message.route.id
   end
 
-  table_3[1] = message.response.status
-  table_3[2] = service_name
-  table_3[3] = route_name
+  table_3[1] = service_name
+  table_3[2] = route_name
+  table_3[3] = message.response.status
   metrics.status:inc(1, table_3)
 
   local request_size = tonumber(message.request.size)
   if request_size and request_size > 0 then
-    table_3[1] = "ingress"
+    table_3[3] = "ingress"
     metrics.bandwidth:inc(request_size, table_3)
   end
 
   local response_size = tonumber(message.response.size)
   if response_size and response_size > 0 then
-    table_3[1] = "egress"
+    table_3[3] = "egress"
     metrics.bandwidth:inc(response_size, table_3)
   end
 
   local request_latency = message.latencies.request
   if request_latency and request_latency >= 0 then
-    table_3[1] = "request"
+    table_3[3] = "request"
     metrics.latency:observe(request_latency, table_3)
   end
 
   local upstream_latency = message.latencies.proxy
   if upstream_latency ~= nil and upstream_latency >= 0 then
-    table_3[1] = "upstream"
+    table_3[3] = "upstream"
     metrics.latency:observe(upstream_latency, table_3)
   end
 
   local kong_proxy_latency = message.latencies.kong
   if kong_proxy_latency ~= nil and kong_proxy_latency >= 0 then
-    table_3[1] = "kong"
+    table_3[3] = "kong"
     metrics.latency:observe(kong_proxy_latency, table_3)
   end
 end
