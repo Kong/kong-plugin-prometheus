@@ -10,6 +10,9 @@ local metrics = {}
 -- prometheus.lua instance
 local prometheus
 
+-- use the same counter library shipped with Kong
+package.loaded['prometheus.resty_counter'] = require("resty.counter")
+
 
 local function init()
   local shm = "prometheus_metrics"
