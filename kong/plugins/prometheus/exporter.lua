@@ -11,7 +11,7 @@ local metrics = {}
 local prometheus
 
 -- use the same counter library shipped with Kong
-package.loaded['prometheus.resty_counter'] = require("resty.counter")
+package.loaded['prometheus_resty_counter'] = require("resty.counter")
 
 
 local function init()
