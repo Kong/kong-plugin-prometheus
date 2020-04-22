@@ -69,7 +69,9 @@ local function init_worker()
 end
 
 
-local table_3 = {0, 0, 0}
+-- Since in the prometheus library we create a new table for each diverged label
+-- so putting the "more dynamic" label at the end will save us some memory
+local labels_table = {0, 0, 0}
 
 local function log(message)
   if not metrics then
@@ -92,39 +94,39 @@ local function log(message)
     route_name = message.route.name or message.route.id
   end
 
-  table_3[1] = service_name
-  table_3[2] = route_name
-  table_3[3] = message.response.status
-  metrics.status:inc(1, table_3)
+  labels_table[1] = service_name
+  labels_table[2] = route_name
+  labels_table[3] = message.response.status
+  metrics.status:inc(1, labels_table)
 
   local request_size = tonumber(message.request.size)
   if request_size and request_size > 0 then
-    table_3[3] = "ingress"
-    metrics.bandwidth:inc(request_size, table_3)
+    labels_table[3] = "ingress"
+    metrics.bandwidth:inc(request_size, labels_table)
   end
 
   local response_size = tonumber(message.response.size)
   if response_size and response_size > 0 then
-    table_3[3] = "egress"
-    metrics.bandwidth:inc(response_size, table_3)
+    labels_table[3] = "egress"
+    metrics.bandwidth:inc(response_size, labels_table)
   end
 
   local request_latency = message.latencies.request
   if request_latency and request_latency >= 0 then
-    table_3[3] = "request"
-    metrics.latency:observe(request_latency, table_3)
+    labels_table[3] = "request"
+    metrics.latency:observe(request_latency, labels_table)
   end
 
   local upstream_latency = message.latencies.proxy
   if upstream_latency ~= nil and upstream_latency >= 0 then
-    table_3[3] = "upstream"
-    metrics.latency:observe(upstream_latency, table_3)
+    labels_table[3] = "upstream"
+    metrics.latency:observe(upstream_latency, labels_table)
   end
 
   local kong_proxy_latency = message.latencies.kong
   if kong_proxy_latency ~= nil and kong_proxy_latency >= 0 then
-    table_3[3] = "kong"
-    metrics.latency:observe(kong_proxy_latency, table_3)
+    labels_table[3] = "kong"
+    metrics.latency:observe(kong_proxy_latency, labels_table)
   end
 end
 
