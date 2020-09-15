@@ -113,7 +113,10 @@ local function init()
 
       metrics.dataplane_last_seen = prometheus:gauge("dataplane_last_seen",
                                                 "Last time data plane contacted control plane",
-                                                {"node_id", "hostname", "ip", "hash"})
+                                                {"node_id", "hostname", "ip"})
+      metrics.dataplane_config_hash = prometheus:gauge("dataplane_config_hash",
+                                                "Config hash numeric value of the data plane",
+                                                {"node_id", "hostname", "ip"})
     end
   end
 end
@@ -357,10 +360,16 @@ local function metric_data()
   if cp_metrics then
     -- Cleanup old metrics
     metrics.dataplane_last_seen:reset()
+    metrics.dataplane_config_hash:reset()
 
     local data_planes = clustering.get_status()
     for node_id, status in pairs(data_planes) do
-      metrics.dataplane_last_seen:set(status.last_seen, { node_id, status.hostname, status.ip, status.config_hash })
+      local labels = { node_id, status.hostname, status.ip }
+      metrics.dataplane_last_seen:set(status.last_seen, labels)
+      -- Note the following will be represented as a float instead of int64 since luajit
+      -- don't like int64.
+      -- But prometheus uses float instead of int64 as well
+      metrics.dataplane_config_hash:set(tonumber("0x" .. status.config_hash), labels)
     end
   end
 
