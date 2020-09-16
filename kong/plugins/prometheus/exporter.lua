@@ -105,19 +105,17 @@ local function init()
   end
 
   -- Hybrid mode status
-  if kong.version_num >= 2000000 then -- 200.00.00 -> 2.0.0 then
-    if kong.configuration.role == "control_plane" then
-      cp_metrics = true
+  if kong.configuration.role == "control_plane" then
+    cp_metrics = true
 
-      clustering = require("kong.clustering")
+    clustering = require("kong.clustering")
 
-      metrics.dataplane_last_seen = prometheus:gauge("dataplane_last_seen",
-                                                "Last time data plane contacted control plane",
-                                                {"node_id", "hostname", "ip"})
-      metrics.dataplane_config_hash = prometheus:gauge("dataplane_config_hash",
-                                                "Config hash numeric value of the data plane",
-                                                {"node_id", "hostname", "ip"})
-    end
+    metrics.dataplane_last_seen = prometheus:gauge("dataplane_last_seen",
+                                              "Last time data plane contacted control plane",
+                                              {"node_id", "hostname", "ip"})
+    metrics.dataplane_config_hash = prometheus:gauge("dataplane_config_hash",
+                                              "Config hash numeric value of the data plane",
+                                              {"node_id", "hostname", "ip"})
   end
 end
 
@@ -367,8 +365,7 @@ local function metric_data()
       local labels = { node_id, status.hostname, status.ip }
       metrics.dataplane_last_seen:set(status.last_seen, labels)
       -- Note the following will be represented as a float instead of int64 since luajit
-      -- don't like int64.
-      -- But prometheus uses float instead of int64 as well
+      -- don't like int64. Good news is prometheus uses float instead of int64 as well
       metrics.dataplane_config_hash:set(tonumber("0x" .. status.config_hash), labels)
     end
   end
