@@ -6,6 +6,8 @@ local concat = table.concat
 local select = select
 local balancer = require("kong.runloop.balancer")
 
+local stream_available, stream_api = pcall(require, "kong.tools.stream_api")
+
 local DEFAULT_BUCKETS = { 1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70,
                           80, 90, 100, 200, 300, 400, 500, 1000,
                           2000, 5000, 10000, 30000, 60000 }
@@ -213,7 +215,7 @@ else
 end
 
 
-local function collect()
+local function metric_data()
   if not prometheus or not metrics then
     kong.log.err("prometheus: plugin is not initialized, please make sure ",
                  " 'prometheus_metrics' shared dict is present in nginx template")
@@ -296,6 +298,16 @@ local function collect()
   return prometheus:metric_data()
 end
 
+local function collect(with_stream)
+  ngx.header.content_type = "text/plain; charset=UTF-8"
+
+  ngx.print(metric_data())
+
+  if stream_available then
+    ngx.print(stream_api.request("prometheus", ""))
+  end
+end
+
 local function get_prometheus()
   if not prometheus then
     kong.log.err("prometheus: plugin is not initialized, please make sure ",
@@ -308,6 +320,7 @@ return {
   init        = init,
   init_worker = init_worker,
   log         = log,
+  metric_data = metric_data,
   collect     = collect,
   get_prometheus = get_prometheus,
 }

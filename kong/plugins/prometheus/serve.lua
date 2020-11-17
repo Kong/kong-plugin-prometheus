@@ -1,8 +1,6 @@
 local lapis = require "lapis"
 local prometheus = require "kong.plugins.prometheus.exporter"
 
-local stream_available, stream_api = pcall(require, "kong.tools.stream_api")
-
 
 local kong = kong
 
@@ -39,13 +37,7 @@ end)
 
 
 app:match("/metrics", function()
-  ngx.header.content_type = "text/plain; charset=UTF-8"
-
-  ngx.print(prometheus:collect())
-
-  if stream_available then
-    ngx.print(stream_api.request("prometheus", "") or "")
-  end
+  prometheus:collect()
 end)
 
 
