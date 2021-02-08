@@ -16,8 +16,8 @@ local function init(prometheus)
                                                 "the timestamp is substracted by 24 hours "..
                                                 "to avoid difference in timezone")
   metrics.license_features = prometheus:gauge("enterprise_license_features",
-                                                "License features",
-                                              { "ee_plugins", "write_admin_api" })
+                                                "License features features",
+                                              { "feature" })
 end
 
 local function isleap(year)
@@ -97,10 +97,11 @@ local function metric_data()
   metrics.license_expiration:set(expiration - 86400)
 
 
-  metrics.license_features:set(ngx.time(), {
-    kong.licensing:can("ee_plugins"),
-    kong.licensing:can("write_admin_api"),
-  })
+  metrics.license_features:set(kong.licensing:can("ee_plugins") and 1 or 0,
+                              { "ee_plugins" })
+
+  metrics.license_features:set(kong.licensing:can("write_admin_api") and 1 or 0,
+                              { "write_admin_api" })
 end
 
 
