@@ -1,7 +1,7 @@
 local kong = kong
 local ngx = ngx
 local sub = string.sub
-local floor = math.floor
+local split = require('kong.tools.utils').split
 
 local metrics = {}
 
@@ -20,35 +20,19 @@ local function init(prometheus)
                                               { "feature" })
 end
 
-local function isleap(year)
-  return (year % 4) == 0 and ((year % 100) > 0 or (year % 400) == 0)
-end
-
-local past = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334 }
-local function day_of_year(year, mon, mday)
-  local d = past[mon] + mday - 1
-  if mon > 2 and isleap(year) then
-    d = d + 1
-  end
-  return d
-end
-
-local function leaps(year)
-  return floor(year / 400) + floor(year / 4) - floor(year / 100)
-end
-
 local function license_date_to_unix(yyyy_mm_dd)
-  local year = tonumber(sub(yyyy_mm_dd, 1, 4))
-  local month = tonumber(sub(yyyy_mm_dd, 6, 7))
-  local day = tonumber(sub(yyyy_mm_dd, 9, 10))
+  local date_t = split(yyyy_mm_dd, "-")
 
-  local tm
-  tm = (year - 1970) * 365
-  tm = tm + leaps(year - 1) - leaps(1969)
-  tm = (tm + day_of_year(year, month, day)) * 24
-  tm = tm * 3600
-  
-  return tm
+  local ok, res = pcall(os.time, {
+    year = tonumber(date_t[1]),
+    month = tonumber(date_t[2]),
+    day = tonumber(date_t[3])
+  })
+  if ok then
+    return res
+  end
+
+  return nil, res
 end
 
 local function metric_data()
@@ -87,14 +71,14 @@ local function metric_data()
     kong.log.err("cannot read license expiration when collecting license info")
     return
   end
-  expiration = license_date_to_unix(expiration)
+  local tm, err = license_date_to_unix(expiration)
   if not license_date_to_unix then
     metrics.license_errors:inc()
-    kong.log.err("cannot parse license expiration when collecting license info")
+    kong.log.err("cannot parse license expiration when collecting license info ", err)
     return
   end
   -- substract it by 24h so everyone one earth is happy monitoring it
-  metrics.license_expiration:set(expiration - 86400)
+  metrics.license_expiration:set(tm - 86400)
 
 
   metrics.license_features:set(kong.licensing:can("ee_plugins") and 1 or 0,
