@@ -72,7 +72,7 @@ local function metric_data()
     return
   end
   local tm, err = license_date_to_unix(expiration)
-  if not license_date_to_unix then
+  if not tm then
     metrics.license_errors:inc()
     kong.log.err("cannot parse license expiration when collecting license info ", err)
     return
