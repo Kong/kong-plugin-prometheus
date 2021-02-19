@@ -1,5 +1,4 @@
 local kong = kong
-local ngx = ngx
 local sub = string.sub
 local split = require('kong.tools.utils').split
 
