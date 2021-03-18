@@ -83,6 +83,23 @@ local function init()
                                           "HTTP status codes for customer per service/route in Kong",
                                           {"service", "route", "code", "consumer"})
 
+  -- per location / url param
+  metrics.param_total = prometheus:counter("http_url_param_total",
+                                          "HTTP status codes for specific GET param in Kong",
+                                          {"service", "route", "param"})
+
+  metrics.param_consumer_total = prometheus:counter("http_url_param_consumer_total",
+                                          "HTTP status codes for specific GET param in Kong",
+                                          {"service", "route", "param", "consumer"})
+
+  metrics.location_total = prometheus:counter("http_url_location_total",
+                                          "HTTP status codes for specific URL location in Kong",
+                                          {"service", "route", "location"})
+
+  metrics.location_consumer_total = prometheus:counter("http_url_location_consumer_total",
+                                          "HTTP status codes for specific URL location in Kong",
+                                          {"service", "route", "location", "consumer"})
+
   if enterprise then
     enterprise.init(prometheus)
   end
@@ -180,6 +197,72 @@ if ngx.config.subsystem == "http" then
       labels_table4[3] = message.response.status
       labels_table4[4] = serialized.consumer
       metrics.consumer_status:inc(1, labels_table4)
+    end
+
+    if serialized.param_list then
+      local value
+      local args, err = ngx.req.get_uri_args()
+      for _, param in ipairs(serialized.param_list) do
+        if args[param] ~= nil and type(args[param]) ~= 'table' then
+          value = args[param]
+          break
+        end
+      end
+
+      if value ~= nil then
+        if serialized.param_extract ~= nil then
+          local match, err = ngx.re.match(value, serialized.param_extract, 'aio')
+          if err then
+            kong.log.err("prometheus: failed to extract param value becase of a regex error - " .. err)
+            value = nil
+          elseif match == nil or (not match[1] and not match['param']) then
+            value = nil
+          elseif match['param'] then
+            value = match['param']
+          else
+            value = match[1]
+          end
+        end
+
+        if value ~= nil then
+          if serialized.consumer ~= nil then
+            labels_table4[3] = value
+            labels_table4[4] = serialized.consumer
+            metrics.param_consumer_total:inc(1, labels_table4)
+          else
+            labels_table[3] = value
+            metrics.param_total:inc(1, labels_table)
+          end
+        end
+      end
+    end
+
+    if serialized.location then
+      local value = ngx.var.uri
+      if serialized.location_extract ~= nil then
+        local match, err = ngx.re.match(value, serialized.location_extract, 'aio')
+        if err then
+          kong.log.err("prometheus: failed to extract location portion becase of a regex error - " .. err)
+          value = nil
+        elseif match == nil or (not match[1] and not match['location']) then
+          value = nil
+        elseif match['location'] then
+          value = match['location']
+        else
+          value = match[1]
+        end
+      end
+
+      if value ~= nil then
+        if serialized.consumer ~= nil then
+          labels_table4[3] = value
+          labels_table4[4] = serialized.consumer
+          metrics.location_consumer_total:inc(1, labels_table4)
+        else
+          labels_table[3] = value
+          metrics.location_total:inc(1, labels_table)
+        end
+      end
     end
   end
 
