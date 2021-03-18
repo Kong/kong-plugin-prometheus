@@ -15,9 +15,20 @@ function PrometheusHandler.init_worker()
 end
 
 
-function PrometheusHandler.log()
+function PrometheusHandler.log(self, conf)
   local message = kong.log.serialize()
-  prometheus.log(message)
+
+  local serialized = {
+    param_list = conf.param_collect_list,
+    param_extract = conf.param_value_extract,
+    location = conf.location_collect,
+    location_extract = conf.location_extract,
+  }
+  if conf.per_consumer and message.consumer ~= nil then
+    serialized.consumer = message.consumer.username
+  end
+
+  prometheus.log(message, serialized)
 end
 
 

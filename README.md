@@ -112,9 +112,18 @@ kong_bandwidth{type="ingress",service="google"} 254
 # HELP kong_datastore_reachable Datastore reachable from Kong, 0 is unreachable
 # TYPE kong_datastore_reachable gauge
 kong_datastore_reachable 1
+# HELP kong_http_consumer_status HTTP status codes for customer per service/route in Kong
+# TYPE kong_http_consumer_status counter
+kong_http_consumer_status{service="upstream",route="default",code="200",consumer="consumer1"} 5185
 # HELP kong_http_status HTTP status codes per service in Kong
 # TYPE kong_http_status counter
 kong_http_status{code="301",service="google"} 2
+# HELP kong_http_url_location_consumer_total HTTP status codes for specific URL location in Kong
+# TYPE kong_http_url_location_consumer_total counter
+kong_http_url_location_consumer_total{service="upstream",route="default",location="hello",consumer="consumer1"} 5
+# HELP kong_http_url_param_consumer_total HTTP status codes for specific GET param in Kong
+# TYPE kong_http_url_param_consumer_total counter
+kong_http_url_param_consumer_total{service="upstream",route="default",param="123456",consumer="consumer1"} 5
 # HELP kong_latency Latency added by Kong, total request time and upstream latency for each service in Kong
 # TYPE kong_latency histogram
 kong_latency_bucket{type="kong",service="google",le="00001.0"} 1
