@@ -297,9 +297,9 @@ describe("Plugin: prometheus (access)", function()
     })
     local body = assert.res_status(200, res)
     assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
-                   '{shared_dict="prometheus_metrics"} 5242880', body, nil, true)
+                   '{shared_dict="prometheus_metrics",kong_subsystem="http"} 5242880', body, nil, true)
     assert.matches('kong_memory_lua_shared_dict_bytes' ..
-                   '{shared_dict="prometheus_metrics"}', body, nil, true)
+                   '{shared_dict="prometheus_metrics",kong_subsystem="http"}', body, nil, true)
 
     assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
   end)

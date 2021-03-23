@@ -56,17 +56,17 @@ local function init()
   local memory_stats = {}
   memory_stats.worker_vms = prometheus:gauge("memory_workers_lua_vms_bytes",
                                              "Allocated bytes in worker Lua VM",
-                                             {"pid"})
+                                             {"pid", "kong_subsystem"})
   memory_stats.shms = prometheus:gauge("memory_lua_shared_dict_bytes",
                                        "Allocated slabs in bytes in a shared_dict",
-                                       {"shared_dict"})
+                                       {"shared_dict", "kong_subsystem"})
   memory_stats.shm_capacity = prometheus:gauge("memory_lua_shared_dict_total_bytes",
                                                "Total capacity in bytes of a shared_dict",
-                                               {"shared_dict"})
+                                               {"shared_dict", "kong_subsystem"})
 
   local res = kong.node.get_memory_stats()
   for shm_name, value in pairs(res.lua_shared_dicts) do
-    memory_stats.shm_capacity:set(value.capacity, {shm_name})
+    memory_stats.shm_capacity:set(value.capacity, { shm_name, ngx.config.subsystem })
   end
 
   metrics.memory_stats = memory_stats
@@ -324,11 +324,11 @@ local function metric_data()
   -- memory stats
   local res = kong.node.get_memory_stats()
   for shm_name, value in pairs(res.lua_shared_dicts) do
-    metrics.memory_stats.shms:set(value.allocated_slabs, {shm_name})
+    metrics.memory_stats.shms:set(value.allocated_slabs, { shm_name, ngx.config.subsystem })
   end
   for i = 1, #res.workers_lua_vms do
     metrics.memory_stats.worker_vms:set(res.workers_lua_vms[i].http_allocated_gc,
-                                        {res.workers_lua_vms[i].pid})
+                                        { res.workers_lua_vms[i].pid, ngx.config.subsystem })
   end
 
   if enterprise then
