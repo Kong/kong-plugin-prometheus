@@ -24,6 +24,7 @@ if pok then
   enterprise = require("kong.plugins.prometheus.enterprise.exporter")
 end
 
+local kong_subsystem = ngx.config.subsystem
 
 local function init()
   local shm = "prometheus_metrics"
@@ -35,7 +36,7 @@ local function init()
   prometheus = require("kong.plugins.prometheus.prometheus").init(shm, "kong_")
 
   -- global metrics
-  if ngx.config.subsystem == "http" then
+  if kong_subsystem == "http" then
     metrics.connections = prometheus:gauge("nginx_http_current_connections",
       "Number of HTTP connections",
       {"state"})
@@ -66,13 +67,13 @@ local function init()
 
   local res = kong.node.get_memory_stats()
   for shm_name, value in pairs(res.lua_shared_dicts) do
-    memory_stats.shm_capacity:set(value.capacity, { shm_name, ngx.config.subsystem })
+    memory_stats.shm_capacity:set(value.capacity, { shm_name, kong_subsystem })
   end
 
   metrics.memory_stats = memory_stats
 
   -- per service/route
-  if ngx.config.subsystem == "http" then
+  if kong_subsystem == "http" then
     metrics.status = prometheus:counter("http_status",
                                         "HTTP status codes per service/route in Kong",
                                         {"service", "route", "code"})
@@ -129,7 +130,7 @@ end
 
 local log
 
-if ngx.config.subsystem == "http" then
+if kong_subsystem == "http" then
   function log(message, serialized)
     if not metrics then
       kong.log.err("prometheus: can not log metrics because of an initialization "
@@ -324,11 +325,11 @@ local function metric_data()
   -- memory stats
   local res = kong.node.get_memory_stats()
   for shm_name, value in pairs(res.lua_shared_dicts) do
-    metrics.memory_stats.shms:set(value.allocated_slabs, { shm_name, ngx.config.subsystem })
+    metrics.memory_stats.shms:set(value.allocated_slabs, { shm_name, kong_subsystem })
   end
   for i = 1, #res.workers_lua_vms do
     metrics.memory_stats.worker_vms:set(res.workers_lua_vms[i].http_allocated_gc,
-                                        { res.workers_lua_vms[i].pid, ngx.config.subsystem })
+                                        { res.workers_lua_vms[i].pid, kong_subsystem })
   end
 
   if enterprise then
