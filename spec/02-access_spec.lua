@@ -285,9 +285,9 @@ describe("Plugin: prometheus (access)", function()
       path    = "/metrics",
     })
     local body = assert.res_status(200, res)
-    assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="http"}', body, nil, true)
+    assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="http"} %d+', body)
     if stream_available then
-      assert.not_matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"}', body, nil, true)
+      assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"} %d+', body)
     end
 
     assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
@@ -300,16 +300,12 @@ describe("Plugin: prometheus (access)", function()
     })
     local body = assert.res_status(200, res)
     assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="http"} 5242880', body, nil, true)
-    assert.matches('kong_memory_lua_shared_dict_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="http"}', body, nil, true)
-
-    if stream_available then
-      assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
-                    '{shared_dict="prometheus_metrics",kong_subsystem="stream"} 5242880', body, nil, true)
-      assert.matches('kong_memory_lua_shared_dict_bytes' ..
-                    '{shared_dict="prometheus_metrics",kong_subsystem="stream"}', body, nil, true)
-    end
+                   '{shared_dict="prometheus_metrics",kong_subsystem="http"} %d+', body)
+    -- TODO: uncomment below once the ngx.shared iterrator in stream is fixed
+    -- if stream_available then
+    --   assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
+    --                 '{shared_dict="stream_prometheus_metrics",kong_subsystem="stream"} %d+', body)
+    -- end
 
     assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
   end)
@@ -344,8 +340,8 @@ test_f("Plugin: prometheus (access) no stream listeners", function()
     }
 
     assert(helpers.start_kong {
-        nginx_conf = nginx_conf,
         plugins = "bundled, prometheus",
+        stream_listen = "off",
     })
     admin_client = helpers.admin_client()
   end)
@@ -364,8 +360,8 @@ test_f("Plugin: prometheus (access) no stream listeners", function()
       path    = "/metrics",
     })
     local body = assert.res_status(200, res)
-    assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="http"}', body, nil, true)
-    assert.not_matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"}', body, nil, true)
+    assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="http"}', body)
+    assert.not_matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"}', body)
 
     assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
   end)
@@ -377,14 +373,10 @@ test_f("Plugin: prometheus (access) no stream listeners", function()
     })
     local body = assert.res_status(200, res)
     assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="http"} 5242880', body, nil, true)
-    assert.matches('kong_memory_lua_shared_dict_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="http"}', body, nil, true)
+                   '{shared_dict="prometheus_metrics",kong_subsystem="http"} %d+', body)
 
-    assert.not_matches('kong_memory_lua_shared_dict_total_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="stream"} 5242880', body, nil, true)
     assert.not_matches('kong_memory_lua_shared_dict_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="stream"}', body, nil, true)
+                   '{shared_dict="stream_prometheus_metric",kong_subsystem="stream"} %d+', body)
     assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
   end)
 end)

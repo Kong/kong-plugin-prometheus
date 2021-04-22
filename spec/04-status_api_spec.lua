@@ -376,9 +376,9 @@ describe("Plugin: prometheus (access via status API)", function()
       path    = "/metrics",
     })
     local body = assert.res_status(200, res)
-    assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="http"}', body, nil, true)
+    assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="http"}', body)
     if stream_available then
-      assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"}', body, nil, true)
+      assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"}', body)
     end
 
     assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
@@ -391,79 +391,12 @@ describe("Plugin: prometheus (access via status API)", function()
     })
     local body = assert.res_status(200, res)
     assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="http"} 5242880', body, nil, true)
-    assert.matches('kong_memory_lua_shared_dict_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="http"}', body, nil, true)
-    if stream_available then
-      assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
-                    '{shared_dict="prometheus_metrics",kong_subsystem="stream"} 5242880', body, nil, true)
-      assert.matches('kong_memory_lua_shared_dict_bytes' ..
-                    '{shared_dict="prometheus_metrics",kong_subsystem="stream"}', body, nil, true)
-    end
-
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
-  end)
-end)
-
-local test_f
-if stream_available then
-  test_f = describe
-else
-  test_f = pending
-end
-test_f("Plugin: prometheus (access via status API), no stream listeners", function()
-  local status_client
-
-  setup(function()
-    local bp = helpers.get_db_utils()
-
-    bp.plugins:insert {
-      name = "prometheus"
-    }
-
-    status_client = helpers.http_client("127.0.0.1", 9500, 20000)
-
-    assert(helpers.start_kong {
-      nginx_conf = nginx_conf,
-      plugins = "bundled, prometheus",
-      status_listen = "0.0.0.0:9500",
-    })
-  end)
-
-  teardown(function()
-    if status_client then
-      status_client:close()
-    end
-
-    helpers.stop_kong()
-  end)
-
-  it("exposes Lua worker VM stats only for http subsystem", function()
-    local res = assert(status_client:send {
-      method  = "GET",
-      path    = "/metrics",
-    })
-    local body = assert.res_status(200, res)
-    assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="http"}', body, nil, true)
-    assert.not_matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"}', body, nil, true)
-
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
-  end)
-
-  it("exposes lua_shared_dict metrics only for http subsystem", function()
-    local res = assert(status_client:send {
-      method  = "GET",
-      path    = "/metrics",
-    })
-    local body = assert.res_status(200, res)
-    assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="http"} 5242880', body, nil, true)
-    assert.matches('kong_memory_lua_shared_dict_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="http"}', body, nil, true)
-    assert.not_matches('kong_memory_lua_shared_dict_total_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="stream"} 5242880', body, nil, true)
-    assert.not_matches('kong_memory_lua_shared_dict_bytes' ..
-                   '{shared_dict="prometheus_metrics",kong_subsystem="stream"}', body, nil, true)
+                   '{shared_dict="prometheus_metrics",kong_subsystem="http"} %d+', body)
+    -- TODO: uncomment below once the ngx.shared iterrator in stream is fixed
+    -- if stream_available then
+    --   assert.matches('kong_memory_lua_shared_dict_total_bytes' ..
+    --                 '{shared_dict="prometheus_metrics",kong_subsystem="stream"} %d+', body)
+    -- end
 
     assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
   end)
