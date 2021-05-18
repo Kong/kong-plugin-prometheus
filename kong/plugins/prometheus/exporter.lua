@@ -10,6 +10,8 @@ local CLUSTERING_SYNC_STATUS = require("kong.constants").CLUSTERING_SYNC_STATUS
 
 local stream_available, stream_api = pcall(require, "kong.tools.stream_api")
 
+local role = kong.configuration.role
+
 local DEFAULT_BUCKETS = { 1, 2, 5, 7, 10, 15, 20, 25, 30, 40, 50, 60, 70,
                           80, 90, 100, 200, 300, 400, 500, 1000,
                           2000, 5000, 10000, 30000, 60000 }
@@ -19,7 +21,6 @@ local prometheus
 
 -- the clustering module, lazily imported
 local clustering
-local cp_metrics
 
 -- use the same counter library shipped with Kong
 package.loaded['prometheus_resty_counter'] = require("resty.counter")
@@ -107,11 +108,8 @@ local function init()
   end
 
 
-  local role = kong.configuration.role
   -- Hybrid mode status
   if role == "control_plane" then
-    cp_metrics = true
-
     clustering = require("kong.clustering")
 
     metrics.data_plane_last_seen = prometheus:gauge("data_plane_last_seen",
@@ -369,7 +367,7 @@ local function metric_data()
   end
 
   -- Hybrid mode status
-  if cp_metrics then
+  if role == "control_plane" then
     -- Cleanup old metrics
     metrics.data_plane_last_seen:reset()
     metrics.data_plane_config_hash:reset()
