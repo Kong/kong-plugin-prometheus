@@ -19,9 +19,6 @@ local metrics = {}
 -- prometheus.lua instance
 local prometheus
 
--- the clustering module, lazily imported
-local clustering
-
 -- use the same counter library shipped with Kong
 package.loaded['prometheus_resty_counter'] = require("resty.counter")
 
@@ -110,8 +107,6 @@ local function init()
 
   -- Hybrid mode status
   if role == "control_plane" then
-    clustering = require("kong.clustering")
-
     metrics.data_plane_last_seen = prometheus:gauge("data_plane_last_seen",
                                               "Last time data plane contacted control plane",
                                               {"node_id", "hostname", "ip"})
