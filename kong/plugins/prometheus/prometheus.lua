@@ -486,7 +486,6 @@ function Prometheus.init(dict_name, prefix)
   self.initialized = true
 
   self:counter(ERROR_METRIC_NAME, "Number of nginx-lua-prometheus errors")
-  self.dict:set(ERROR_METRIC_NAME, 0)
   return self
 end
 

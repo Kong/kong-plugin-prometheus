@@ -121,7 +121,7 @@ describe("Plugin: prometheus (access)", function()
         path    = "/metrics",
       })
       local body = assert.res_status(200, res)
-      assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+      assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
 
       return body:find('kong_http_status{service="mock-service",route="http-route",code="200"} 1', nil, true)
     end)
@@ -141,7 +141,7 @@ describe("Plugin: prometheus (access)", function()
         path    = "/metrics",
       })
       local body = assert.res_status(200, res)
-      assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+      assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
 
       return body:find('kong_http_status{service="mock-service",route="http-route",code="400"} 1', nil, true)
     end)
@@ -166,7 +166,7 @@ describe("Plugin: prometheus (access)", function()
         path    = "/metrics",
       })
       local body = assert.res_status(200, res)
-      assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+      assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
 
       return body:find('kong_http_status{service="mock-grpc-service",route="grpc-route",code="200"} 1', nil, true)
     end)
@@ -189,7 +189,7 @@ describe("Plugin: prometheus (access)", function()
         path    = "/metrics",
       })
       local body = assert.res_status(200, res)
-      assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+      assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
 
       return body:find('kong_http_status{service="mock-grpcs-service",route="grpcs-route",code="200"} 1', nil, true)
     end)
@@ -210,7 +210,7 @@ describe("Plugin: prometheus (access)", function()
         path    = "/metrics",
       })
       local body = assert.res_status(200, res)
-      assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+      assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
 
       return body:find('kong_stream_status{service="tcp-service",route="tcp-route",code="200"} 1', nil, true)
     end)
@@ -243,7 +243,7 @@ describe("Plugin: prometheus (access)", function()
     -- make sure no errors
     assert.logfile().has.no.line("[error]", true, 10)
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 
   it("scrape response has metrics and comments only", function()
@@ -257,7 +257,7 @@ describe("Plugin: prometheus (access)", function()
       assert.matches("^[#|kong]", line)
     end
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 
   it("exposes db reachability metrics", function()
@@ -268,7 +268,7 @@ describe("Plugin: prometheus (access)", function()
     local body = assert.res_status(200, res)
     assert.matches('kong_datastore_reachable 1', body, nil, true)
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 
   it("exposes Lua worker VM stats", function()
@@ -282,7 +282,7 @@ describe("Plugin: prometheus (access)", function()
       assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"} %d+', body)
     end
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 
   it("exposes lua_shared_dict metrics", function()
@@ -299,7 +299,7 @@ describe("Plugin: prometheus (access)", function()
     --                 '{shared_dict="stream_prometheus_metrics",kong_subsystem="stream"} %d+', body)
     -- end
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 
   it("does not expose per consumer metrics by default", function()
@@ -310,7 +310,7 @@ describe("Plugin: prometheus (access)", function()
     local body = assert.res_status(200, res)
     assert.not_match('http_consumer_status', body, nil, true)
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_match('kong_nginx_metric_errors_total', body, nil, true)
   end)
 end)
 
@@ -355,7 +355,7 @@ test_f("Plugin: prometheus (access) no stream listeners", function()
     assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="http"}', body)
     assert.not_matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"}', body)
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 
   it("exposes lua_shared_dict metrics only for http subsystem", function()
@@ -369,7 +369,7 @@ test_f("Plugin: prometheus (access) no stream listeners", function()
 
     assert.not_matches('kong_memory_lua_shared_dict_bytes' ..
                    '{shared_dict="stream_prometheus_metric",kong_subsystem="stream"} %d+', body)
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 end)
 
@@ -453,7 +453,7 @@ describe("Plugin: prometheus (access) per-consumer metrics", function()
         path    = "/metrics",
       })
       local body = assert.res_status(200, res)
-      assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+      assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
 
       return body:find('kong_http_consumer_status{service="mock-service",route="http-route",code="200",consumer="alice"} 1', nil, true)
     end)
@@ -474,7 +474,7 @@ describe("Plugin: prometheus (access) per-consumer metrics", function()
         path    = "/metrics",
       })
       local body = assert.res_status(200, res)
-      assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+      assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
 
       return body:find('kong_http_consumer_status{service="mock-service",route="http-route",code="400",consumer="alice"} 1', nil, true)
     end)
@@ -503,6 +503,6 @@ describe("Plugin: prometheus (access) per-consumer metrics", function()
     assert.not_match('kong_http_consumer_status{service="mock-service",route="http-route",code="401",consumer="alice"} 1', body, nil, true)
     assert.matches('kong_http_status{service="mock-service",route="http-route",code="401"} 1', body, nil, true)
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 end)

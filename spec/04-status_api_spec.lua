@@ -391,7 +391,7 @@ describe("Plugin: prometheus (access via status API)", function()
       assert.matches('kong_memory_workers_lua_vms_bytes{pid="%d+",kong_subsystem="stream"}', body)
     end
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 
   it("exposes lua_shared_dict metrics", function()
@@ -408,6 +408,6 @@ describe("Plugin: prometheus (access via status API)", function()
     --                 '{shared_dict="prometheus_metrics",kong_subsystem="stream"} %d+', body)
     -- end
 
-    assert.matches('kong_nginx_metric_errors_total 0', body, nil, true)
+    assert.not_matches('kong_nginx_metric_errors_total', body, nil, true)
   end)
 end)
