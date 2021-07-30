@@ -84,25 +84,25 @@ local function init()
   if kong_subsystem == "http" then
     metrics.status = prometheus:counter("http_status",
                                         "HTTP status codes per service/route in Kong",
-                                        {"service", "route", "code"})
+                                        {"service", "route", "code", "service_tags", "route_tags"})
   else
     metrics.status = prometheus:counter("stream_status",
                                         "Stream status codes per service/route in Kong",
-                                        {"service", "route", "code"})
+                                        {"service", "route", "code", "service_tags", "route_tags"})
   end
   metrics.latency = prometheus:histogram("latency",
                                          "Latency added by Kong, total " ..
                                          "request time and upstream latency " ..
                                          "for each service/route in Kong",
-                                         {"service", "route", "type"},
+                                         {"service", "route", "type", "service_tags", "route_tags"},
                                          DEFAULT_BUCKETS) -- TODO make this configurable
   metrics.bandwidth = prometheus:counter("bandwidth",
                                          "Total bandwidth in bytes " ..
                                          "consumed per service/route in Kong",
-                                         {"service", "route", "type"})
+                                         {"service", "route", "type", "service_tags", "route_tags"})
   metrics.consumer_status = prometheus:counter("http_consumer_status",
                                           "HTTP status codes for customer per service/route in Kong",
-                                          {"service", "route", "code", "consumer"})
+                                          {"service", "route", "code", "consumer", "service_tags", "route_tags"})
 
   if enterprise then
     enterprise.init(prometheus)
@@ -137,8 +137,8 @@ end
 
 -- Since in the prometheus library we create a new table for each diverged label
 -- so putting the "more dynamic" label at the end will save us some memory
-local labels_table = {0, 0, 0}
-local labels_table4 = {0, 0, 0, 0}
+local labels_table = {0, 0, 0, 0, 0}
+local labels_table6 = {0, 0, 0, 0, 0, 0}
 local upstream_target_addr_health_table = {
   { value = 0, labels = { 0, 0, 0, "healthchecks_off" } },
   { value = 0, labels = { 0, 0, 0, "healthy" } },
@@ -168,22 +168,30 @@ if kong_subsystem == "http" then
       return
     end
 
-    local service_name
+    local service_name, service_tags
     if message and message.service then
       service_name = message.service.name or message.service.host
+      service_tags = ((message.service.tags) and (type(message.service.tags) == "table"))
+                    and concat(message.service.tags, ",")
+                    or ""
     else
       -- do not record any stats if the service is not present
       return
     end
 
-    local route_name
+    local route_name, route_tags
     if message and message.route then
       route_name = message.route.name or message.route.id
+      route_tags = ((message.route.tags) and (type(message.route.tags) == "table"))
+                    and concat(message.route.tags, ",")
+                    or ""
     end
 
     labels_table[1] = service_name
     labels_table[2] = route_name
     labels_table[3] = message.response.status
+    labels_table[4] = service_tags
+    labels_table[5] = route_tags
     metrics.status:inc(1, labels_table)
 
     local request_size = tonumber(message.request.size)
@@ -217,11 +225,13 @@ if kong_subsystem == "http" then
     end
 
     if serialized.consumer ~= nil then
-      labels_table4[1] = labels_table[1]
-      labels_table4[2] = labels_table[2]
-      labels_table4[3] = message.response.status
-      labels_table4[4] = serialized.consumer
-      metrics.consumer_status:inc(1, labels_table4)
+      labels_table6[1] = labels_table[1]
+      labels_table6[2] = labels_table[2]
+      labels_table6[3] = message.response.status
+      labels_table6[4] = serialized.consumer
+      labels_table6[5] = labels_table[4]
+      labels_table6[6] = labels_table[5]
+      metrics.consumer_status:inc(1, labels_table6)
     end
   end
 
@@ -234,22 +244,30 @@ else
       return
     end
 
-    local service_name
+    local service_name, service_tags
     if message and message.service then
       service_name = message.service.name or message.service.host
+      service_tags = ((message.service.tags) and (type(message.service.tags) == "table"))
+                    and concat(message.service.tags, ",")
+                    or ""
     else
       -- do not record any stats if the service is not present
       return
     end
 
-    local route_name
+    local route_name, route_tags
     if message and message.route then
       route_name = message.route.name or message.route.id
+      route_tags = ((message.route.tags) and (type(message.route.tags) == "table"))
+                    and concat(message.route.tags, ",")
+                    or ""
     end
 
     labels_table[1] = service_name
     labels_table[2] = route_name
     labels_table[3] = message.session.status
+    labels_table[4] = service_tags
+    labels_table[5] = route_tags
     metrics.status:inc(1, labels_table)
 
     local ingress_size = tonumber(message.session.received)
